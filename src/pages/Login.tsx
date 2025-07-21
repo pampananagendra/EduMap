@@ -1,0 +1,93 @@
+import React, { useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+
+interface LoginProps {
+  onLoginSuccess?: () => void;
+}
+
+const LoginPage: React.FC<LoginProps> = ({ onLoginSuccess }) => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+    try {
+      const response = await fetch('http://localhost:5001/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+      if (!response.ok) throw new Error('Invalid credentials');
+      const data = await response.json();
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('role', data.role); // Save role for dashboard
+      if (onLoginSuccess) onLoginSuccess();
+      // Redirect to previous page or dashboard
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const from = (location.state as any)?.from?.pathname || '/';
+      setTimeout(() => navigate(from, { replace: true }), 500);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (err: any) {
+      setError(err.message || 'Login failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-100 to-blue-300">
+      <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl p-8 flex flex-col items-center">
+        <img src="https://static.vecteezy.com/system/resources/previews/003/689/228/non_2x/online-registration-or-sign-up-login-for-account-on-smartphone-app-user-interface-with-secure-password-mobile-application-for-ui-web-banner-access-cartoon-people-illustration-vector.jpg" alt="Login visual" className="object-contain w-48 h-48 mb-6 mt-2" />
+        <h1 className="text-3xl font-extrabold mb-2 text-blue-900 tracking-tight">College Finder</h1>
+        <h2 className="text-lg font-semibold mb-7 text-blue-700">Sign in to your account</h2>
+        {error && <div className="mb-4 text-red-600 text-center w-full">{error}</div>}
+        <form onSubmit={handleSubmit} className="w-full flex flex-col items-center">
+          <input
+            type="email"
+            id="email"
+            className="w-full border border-gray-300 rounded-lg px-4 py-3 mb-4 text-base focus:outline-none focus:border-blue-500 transition"
+            value={email}
+            onChange={e => setEmail(e.target.value)}
+            placeholder="Email address"
+            required
+            autoComplete="email"
+          />
+          <input
+            type="password"
+            id="password"
+            className="w-full border border-gray-300 rounded-lg px-4 py-3 mb-6 text-base focus:outline-none focus:border-blue-500 transition"
+            value={password}
+            onChange={e => setPassword(e.target.value)}
+            placeholder="Password"
+            required
+            autoComplete="current-password"
+          />
+          <button
+            type="submit"
+            className="w-full bg-blue-700 text-white py-3 rounded-lg text-lg font-bold shadow-md hover:bg-blue-800 transition mb-4"
+            disabled={loading}
+          >
+            {loading ? 'Logging in...' : 'Login'}
+          </button>
+        </form>
+        <div className="mt-1 text-center w-full">
+          <span className="text-gray-600">Don't have an account?</span>{' '}
+          <span
+            className="text-blue-700 hover:underline cursor-pointer font-semibold"
+            onClick={() => navigate('/signup')}
+          >
+            Sign Up
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default LoginPage;
